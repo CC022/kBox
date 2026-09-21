@@ -66,11 +66,17 @@ public final class LoanStore {
     }
 
     /// Default inputs plus 30 / 20 / 15-year plans at the 2026-09-16 rates. Never saved.
-    public static func demo(chartMode: ChartMode = .cumulative) -> LoanStore {
+    public static func demo(chartMode: ChartMode = .cumulative, extras: Bool = false) -> LoanStore {
         let store = LoanStore(persistence: nil)
         store.chartMode = chartMode
         store.rates = .sample
         store.rateSource = .fetched
+        if extras {
+            store.update(\.includeExtras, true)
+            store.update(\.earthquakeInsurance, 6_000)
+            store.update(\.specialTax, 3_600)
+            store.update(\.utilities, 400)
+        }
         for term in [LoanTerm.thirty, .twenty, .fifteen] {
             store.update(\.term, term)
             store.addPlan()

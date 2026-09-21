@@ -99,7 +99,7 @@ public struct PlanSeries: Sendable {
         for k in indices {
             for c in components {
                 let ci = componentIndex[c]!
-                points.append(ChartPoint(id: k * 8 + ci, x: xs[k], component: c, value: values[k][ci]))
+                points.append(ChartPoint(id: k * Component.allCases.count + ci, x: xs[k], component: c, value: values[k][ci]))
             }
         }
         return points

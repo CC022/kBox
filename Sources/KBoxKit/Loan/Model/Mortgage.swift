@@ -6,6 +6,10 @@ public struct MonthRow: Sendable, Equatable {
     public var tax: Double
     public var insurance: Double
     public var hoa: Double
+    public var specialTax: Double
+    public var earthquake: Double
+    public var maintenance: Double
+    public var utilities: Double
     public var principal: Double
     public var interest: Double
     public var pmi: Double
@@ -16,6 +20,10 @@ public struct MonthRow: Sendable, Equatable {
         case .tax: tax
         case .insurance: insurance
         case .hoa: hoa
+        case .specialTax: specialTax
+        case .earthquake: earthquake
+        case .maintenance: maintenance
+        case .utilities: utilities
         case .principal: principal
         case .interest: interest
         case .pmi: pmi
@@ -25,7 +33,8 @@ public struct MonthRow: Sendable, Equatable {
     public var total: Double { Component.allCases.reduce(0) { $0 + self[$1] } }
     public var principalAndInterest: Double { principal + interest }
 
-    static let zero = MonthRow(month: 0, tax: 0, insurance: 0, hoa: 0, principal: 0, interest: 0, pmi: 0, balance: 0)
+    static let zero = MonthRow(month: 0, tax: 0, insurance: 0, hoa: 0, specialTax: 0, earthquake: 0,
+                               maintenance: 0, utilities: 0, principal: 0, interest: 0, pmi: 0, balance: 0)
 }
 
 public struct LoanSummary: Sendable, Equatable {
@@ -33,6 +42,9 @@ public struct LoanSummary: Sendable, Equatable {
     public var down: Double
     public var months: Int
     public var pmiMonths: Int
+    /// One-time closing costs, and the cash needed at closing (down payment + closing costs).
+    public var closingCosts: Double
+    public var cashToClose: Double
     public var first: MonthRow
     public var totals: [Component: Double]
     public var totalPaid: Double
@@ -75,6 +87,10 @@ public enum Mortgage {
         let tax = i.includeTaxes ? i.price * i.taxRate / 100 / 12 : 0
         let insurance = i.includeTaxes ? i.insurance / 12 : 0
         let hoa = i.includeTaxes ? i.hoa : 0
+        let specialTax = i.includeExtras ? i.specialTax / 12 : 0
+        let earthquake = i.includeExtras ? i.earthquakeInsurance / 12 : 0
+        let maintenance = i.includeExtras ? i.price * i.maintenanceRate / 100 / 12 : 0
+        let utilities = i.includeExtras ? i.utilities : 0
         let pmiOn = i.downPct < 20 && principal0 > 0 && i.pmiRate > 0
         let pmiMonthly = pmiOn ? principal0 * i.pmiRate / 1200 : 0
         let pmiStop = 0.78 * i.price
@@ -88,7 +104,9 @@ public enum Mortgage {
             let pmi = pmiOn && balance > pmiStop ? pmiMonthly : 0
             balance = max(0, balance - principal)
             rows.append(MonthRow(month: month, tax: tax, insurance: insurance, hoa: hoa,
-                                 principal: principal, interest: interest, pmi: pmi, balance: balance))
+                                 specialTax: specialTax, earthquake: earthquake, maintenance: maintenance,
+                                 utilities: utilities, principal: principal, interest: interest,
+                                 pmi: pmi, balance: balance))
         }
         return rows
     }
@@ -98,11 +116,14 @@ public enum Mortgage {
         for row in rows {
             for c in Component.allCases { totals[c, default: 0] += row[c] }
         }
+        let closingCosts = i.includeExtras ? i.price * i.closingCostPct / 100 : 0
         return LoanSummary(
             loan: loanAmount(i),
             down: i.downPayment,
             months: rows.count,
             pmiMonths: rows.filter { $0.pmi > 0 }.count,
+            closingCosts: closingCosts,
+            cashToClose: i.downPayment + closingCosts,
             first: rows.first ?? .zero,
             totals: totals,
             totalPaid: totals.values.reduce(0, +)

@@ -38,6 +38,13 @@ public struct LoanInputs: Codable, Hashable, Sendable {
     public var insurance: Double = 3600 // per year
     public var hoa: Double = 0 // per month
     public var pmiRate: Double = 0.5
+    /// Maintenance, earthquake insurance, special taxes, utilities and closing costs.
+    public var includeExtras = false
+    public var maintenanceRate: Double = 1.0 // % of price per year
+    public var earthquakeInsurance: Double = 0 // per year
+    public var specialTax: Double = 0 // Mello-Roos etc., per year
+    public var utilities: Double = 0 // per month
+    public var closingCostPct: Double = 2.0 // one-time, % of price
 
     public init() {}
 
@@ -57,5 +64,11 @@ public struct LoanInputs: Codable, Hashable, Sendable {
         insurance = try c.decodeIfPresent(Double.self, forKey: .insurance) ?? d.insurance
         hoa = try c.decodeIfPresent(Double.self, forKey: .hoa) ?? d.hoa
         pmiRate = try c.decodeIfPresent(Double.self, forKey: .pmiRate) ?? d.pmiRate
+        includeExtras = try c.decodeIfPresent(Bool.self, forKey: .includeExtras) ?? d.includeExtras
+        maintenanceRate = try c.decodeIfPresent(Double.self, forKey: .maintenanceRate) ?? d.maintenanceRate
+        earthquakeInsurance = try c.decodeIfPresent(Double.self, forKey: .earthquakeInsurance) ?? d.earthquakeInsurance
+        specialTax = try c.decodeIfPresent(Double.self, forKey: .specialTax) ?? d.specialTax
+        utilities = try c.decodeIfPresent(Double.self, forKey: .utilities) ?? d.utilities
+        closingCostPct = try c.decodeIfPresent(Double.self, forKey: .closingCostPct) ?? d.closingCostPct
     }
 }

@@ -107,6 +107,48 @@ struct LoanFormView: View {
                 Text("首付低于 20% 时需缴纳 PMI（按贷款额计），余额降至房价 78% 时自动取消。")
                     .sectionFooterStyle()
             }
+
+            Section {
+                Toggle("包含其他真实开销", isOn: store.binding(\.includeExtras))
+                Group {
+                    LabeledContent {
+                        NumberField(value: store.binding(\.maintenanceRate), format: Fmt.decimalNumber, width: 48, suffix: "% / 年")
+                    } label: {
+                        Text("维护与维修")
+                        Text("\(Fmt.money(inputs.price * inputs.maintenanceRate / 1200)) / 月")
+                    }
+                    LabeledContent {
+                        NumberField(value: store.binding(\.earthquakeInsurance), format: Fmt.wholeNumber, width: 70, prefix: "$", suffix: "/ 年")
+                    } label: {
+                        Text("地震险")
+                        Text(inputs.earthquakeInsurance > 0 ? "\(Fmt.money(inputs.earthquakeInsurance / 12)) / 月" : "未投保")
+                    }
+                    LabeledContent {
+                        NumberField(value: store.binding(\.specialTax), format: Fmt.wholeNumber, width: 70, prefix: "$", suffix: "/ 年")
+                    } label: {
+                        Text("特别税")
+                        Text("Mello-Roos 等，新建社区常见")
+                    }
+                    LabeledContent {
+                        NumberField(value: store.binding(\.utilities), format: Fmt.wholeNumber, width: 70, prefix: "$", suffix: "/ 月")
+                    } label: {
+                        Text("水电与网络")
+                        Text(inputs.utilities > 0 ? "\(Fmt.money(inputs.utilities * 12)) / 年" : "未计入")
+                    }
+                    LabeledContent {
+                        NumberField(value: store.binding(\.closingCostPct), format: Fmt.decimalNumber, width: 48, suffix: "%")
+                    } label: {
+                        Text("成交费用")
+                        Text("一次性 \(Fmt.money(summary.closingCosts))，不计入月供")
+                    }
+                }
+                .disabled(!inputs.includeExtras)
+            } header: {
+                Text("其他开销")
+            } footer: {
+                Text("维护、地震险、特别税和水电会计入月供与图表；成交费用是一次性的，只影响「上车现金」。这些都是估算，具体金额因房屋和地区而异。")
+                    .sectionFooterStyle()
+            }
         }
         .formStyle(.grouped)
     }

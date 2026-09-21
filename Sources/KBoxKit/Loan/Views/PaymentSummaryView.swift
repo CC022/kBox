@@ -16,13 +16,11 @@ struct PaymentSummaryView: View {
     var body: some View {
         let summary = store.current.summary
         let first = summary.first
-        let segments = [
-            Segment(id: "pi", label: "本金和利息", value: first.principalAndInterest, color: Component.principal.color),
-            Segment(id: "tax", label: Component.tax.label, value: first.tax, color: Component.tax.color),
-            Segment(id: "insurance", label: Component.insurance.label, value: first.insurance, color: Component.insurance.color),
-            Segment(id: "hoa", label: Component.hoa.label, value: first.hoa, color: Component.hoa.color),
-            Segment(id: "pmi", label: Component.pmi.label, value: first.pmi, color: Component.pmi.color),
-        ].filter { $0.value > 0 }
+        let segments = ([
+            Segment(id: "pi", label: "本金和利息", value: first.principalAndInterest, color: Component.principal.color)
+        ] + [Component.tax, .insurance, .hoa, .specialTax, .earthquake, .maintenance, .utilities, .pmi].map {
+            Segment(id: $0.rawValue, label: $0.label, value: first[$0], color: $0.color)
+        }).filter { $0.value > 0 }
         let selected = selectedSegment(in: segments)
 
         GroupBox {
@@ -48,9 +46,14 @@ struct PaymentSummaryView: View {
                     .frame(maxWidth: 420)
                 }
 
-                HStack(alignment: .top, spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 12, alignment: .leading)],
+                          alignment: .leading, spacing: 10) {
                     stat("贷款额", Fmt.money(summary.loan))
                     stat("首付", Fmt.money(summary.down))
+                    if summary.closingCosts > 0 {
+                        stat("成交费用", Fmt.money(summary.closingCosts))
+                        stat("上车现金", Fmt.money(summary.cashToClose))
+                    }
                     stat("总利息", Fmt.money(summary.totals[.interest] ?? 0))
                     stat("总支付", Fmt.money(summary.totalPaid))
                     stat("还清时间", Fmt.monthsFromNow(summary.months))

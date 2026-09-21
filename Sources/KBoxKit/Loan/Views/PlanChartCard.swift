@@ -150,7 +150,7 @@ struct PlanChartCard: View {
         }
         .font(.caption)
         .padding(8)
-        .frame(width: 176)
+        .frame(width: 186)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
     }

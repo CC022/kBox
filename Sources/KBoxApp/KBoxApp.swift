@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 ///   KBOX_CHART_MODE=monthly    start the demo in 月供构成 mode
 ///   KBOX_HOVER_YEAR=12         show the chart crosshair at year 12
 ///   KBOX_CARD_ACTIONS=1        show the per-card hover actions
+///   KBOX_EXTRAS=1              turn on the extra-cost section in the demo
 ///   KBOX_SNAPSHOT=<file.png>   save the window to a PNG a few seconds after launch, then quit
 ///   KBOX_SNAPSHOT_SIZE=WxH     resize the window before the snapshot (e.g. 1400x1500)
 struct LaunchOptions {
@@ -72,7 +73,8 @@ struct LaunchOptions {
         DebugOverrides.hoverYear = ProcessInfo.processInfo.environment["KBOX_HOVER_YEAR"].flatMap(Double.init)
         DebugOverrides.showCardActions = ProcessInfo.processInfo.environment["KBOX_CARD_ACTIONS"] == "1"
         #endif
-        return demo ? .demo(chartMode: chartMode) : .live()
+        let extras = ProcessInfo.processInfo.environment["KBOX_EXTRAS"] == "1"
+        return demo ? .demo(chartMode: chartMode, extras: extras) : .live()
     }
 }
 

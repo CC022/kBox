@@ -49,6 +49,35 @@ struct MortgageTests {
         #expect(first.tax == 0 && first.insurance == 0 && first.hoa == 0)
     }
 
+    @Test func extrasAreOffByDefault() {
+        let inputs = LoanInputs()
+        let summary = Mortgage.summarize(Mortgage.amortize(inputs), inputs)
+        #expect(summary.closingCosts == 0)
+        #expect(summary.cashToClose == 500_000)
+        for component in [Component.maintenance, .earthquake, .specialTax, .utilities] {
+            #expect(summary.totals[component] == 0)
+        }
+    }
+
+    @Test func extrasAddToTheMonthlyPaymentAndCash() {
+        var inputs = LoanInputs()
+        inputs.rate = 6.95
+        inputs.includeExtras = true          // maintenance 1%/yr, closing 2%
+        inputs.earthquakeInsurance = 6_000   // $500/mo
+        inputs.specialTax = 3_600            // $300/mo
+        inputs.utilities = 400               // $400/mo
+        let summary = Mortgage.summarize(Mortgage.amortize(inputs), inputs)
+        let first = summary.first
+        #expect(abs(first.maintenance - 2_083.33) < 0.01) // 2.5M × 1% / 12
+        #expect(first.earthquake == 500)
+        #expect(first.specialTax == 300)
+        #expect(first.utilities == 400)
+        // 13,238.96 P&I + 2,500 tax + 300 insurance + the four extras above
+        #expect(abs(first.total - 19_322.29) < 0.01)
+        #expect(summary.closingCosts == 50_000)
+        #expect(summary.cashToClose == 550_000)
+    }
+
     @Test func autoLoanTypeUsesConformingLimit() {
         var inputs = LoanInputs()
         #expect(Mortgage.resolvedType(inputs) == .jumbo) // $2M loan

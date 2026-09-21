@@ -22,6 +22,15 @@ struct ChartSeriesTests {
         #expect(series.components == [.tax, .insurance, .principal, .interest]) // no HOA, no PMI
     }
 
+    @Test func extrasBecomeChartComponents() {
+        var withExtras = inputs
+        withExtras.includeExtras = true
+        withExtras.specialTax = 3_600
+        let series = PlanSeries.build(rows: Mortgage.amortize(withExtras), mode: .monthly)
+        #expect(series.components == [.tax, .insurance, .specialTax, .maintenance, .principal, .interest])
+        #expect(Set(series.plot.map(\.id)).count == series.plot.count) // ids stay unique
+    }
+
     @Test func plotIsDownsampledEveryThreeMonths() {
         let series = PlanSeries.build(rows: rows, mode: .monthly)
         #expect(series.plot.count == 121 * 4)
