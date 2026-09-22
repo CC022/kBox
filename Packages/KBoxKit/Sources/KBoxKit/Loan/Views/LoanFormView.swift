@@ -43,6 +43,7 @@ struct LoanFormView: View {
                         NumberField(value: store.rateBinding, format: Fmt.rateNumber, width: 54, suffix: "%")
                         Stepper("利率", value: store.rateBinding, in: 0...20, step: 0.125)
                             .labelsHidden()
+                        #if os(macOS)
                         Button {
                             Task { await store.fetchRates() }
                         } label: {
@@ -53,6 +54,7 @@ struct LoanFormView: View {
                             }
                         }
                         .disabled(store.isFetching)
+                        #endif
                     }
                 } label: {
                     Text("利率")
@@ -182,7 +184,9 @@ struct LoanFormView: View {
             } ?? ""
             Text("利率来源 FRED：\(rates.source)\(reference)。20 年及巨额 15/20 年为按期限插值估算。")
         } else {
-            Text("点击「获取最新」（⌘R）从 FRED 拉取当日按揭利率；也可以直接输入。")
+            Text(Platform.supportsHover
+                 ? "点击「获取最新」（⌘R）从 FRED 拉取当日按揭利率；也可以直接输入。"
+                 : "点右上角的刷新按钮从 FRED 拉取当日按揭利率；也可以直接输入。")
         }
     }
 }
@@ -197,6 +201,7 @@ extension View {
 }
 
 /// Right-aligned numeric field with optional prefix/suffix. Commits on Return or focus change.
+/// On touch it uses the decimal keypad, which has no return key, so it adds a 完成 button above it.
 struct NumberField: View {
     @Binding var value: Double
     var format: FloatingPointFormatStyle<Double>
@@ -204,15 +209,43 @@ struct NumberField: View {
     var prefix: String?
     var suffix: String?
 
+    @FocusState private var isFocused: Bool
+
     var body: some View {
         HStack(spacing: 3) {
             if let prefix { Text(prefix).foregroundStyle(.secondary) }
-            TextField("", value: $value, format: format)
-                .labelsHidden()
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-                .frame(width: width)
+            field
             if let suffix { Text(suffix).foregroundStyle(.secondary) }
         }
+    }
+
+    private var field: some View {
+        TextField("", value: $value, format: format)
+            .labelsHidden()
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .frame(width: fieldWidth)
+            .focused($isFocused)
+        #if os(iOS)
+            .keyboardType(.decimalPad)
+            .textFieldStyle(.roundedBorder)
+            .toolbar {
+                if isFocused {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("完成") { isFocused = false }
+                    }
+                }
+            }
+        #endif
+    }
+
+    /// Touch targets need a bit more room than the macOS fields.
+    private var fieldWidth: CGFloat {
+        #if os(macOS)
+        width
+        #else
+        max(width + 18, 68)
+        #endif
     }
 }

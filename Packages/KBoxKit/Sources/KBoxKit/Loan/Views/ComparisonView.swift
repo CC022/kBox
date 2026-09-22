@@ -25,6 +25,10 @@ struct ComparisonView: View {
                     .fixedSize()
                 }
                 Spacer()
+                if !Platform.supportsHover, hoverYear != nil {
+                    Button("清除十字线", systemImage: "xmark") { hoverYear = nil }
+                        .labelStyle(.iconOnly)
+                }
                 if !store.plans.isEmpty {
                     Button("全部清空", role: .destructive) { confirmingClear = true }
                 }
@@ -40,7 +44,7 @@ struct ComparisonView: View {
                 .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
             } else {
                 PlanTable(store: store)
-                    .frame(height: CGFloat(min(store.plans.count, 8)) * 24 + 50)
+                    .frame(height: PlanTable.height(rows: store.plans.count))
 
                 if visible.isEmpty {
                     ContentUnavailableView("没有显示的方案", systemImage: "eye.slash",

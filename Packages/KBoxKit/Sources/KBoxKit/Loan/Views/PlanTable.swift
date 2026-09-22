@@ -20,9 +20,7 @@ struct PlanTable: View {
     var body: some View {
         Table(rows.sorted(using: sortOrder), selection: $store.selectedPlanIDs, sortOrder: $sortOrder) {
             TableColumn("显示") { row in
-                Toggle("显示", isOn: store.visibilityBinding(row.id))
-                    .toggleStyle(.checkbox)
-                    .labelsHidden()
+                VisibilityToggle(isOn: store.visibilityBinding(row.id))
             }
             .width(36)
 
@@ -54,10 +52,13 @@ struct PlanTable: View {
             }
             .width(min: 92, ideal: 100)
 
+            // On iPad the columns would run past the edge; the chart cards show 总支付 anyway.
+            #if os(macOS)
             TableColumn("总支付", value: \.totalPaid) { row in
                 Text(Fmt.compactMoney(row.totalPaid)).monospacedDigit()
             }
             .width(min: 60, ideal: 70)
+            #endif
         }
         .contextMenu(forSelectionType: LoanPlan.ID.self) { ids in
             let chosen = store.plans.filter { ids.contains($0.id) }
@@ -72,14 +73,21 @@ struct PlanTable: View {
                 Divider()
                 Button("删除", systemImage: "trash", role: .destructive) { store.removePlans(ids) }
             }
-        } primaryAction: { ids in
-            if ids.count == 1, let plan = store.plans.first(where: { ids.contains($0.id) }) {
-                store.load(plan)
-            }
         }
+        #if os(macOS)
         .onDeleteCommand {
             store.removePlans(store.selectedPlanIDs)
         }
+        #endif
+    }
+
+    /// Row height + header, used to size the table inside the scrolling canvas.
+    static func height(rows: Int) -> CGFloat {
+        #if os(macOS)
+        CGFloat(min(rows, 8)) * 24 + 50
+        #else
+        CGFloat(min(rows, 8)) * 44 + 60
+        #endif
     }
 
     private var rows: [Row] {
@@ -101,6 +109,29 @@ struct PlanTable: View {
                 lowestInterest: plan.id == lowestInterest
             )
         }
+    }
+}
+
+/// Checkbox on macOS; a tappable circle on touch, where a checkbox style does not exist.
+private struct VisibilityToggle: View {
+    @Binding var isOn: Bool
+
+    var body: some View {
+        #if os(macOS)
+        Toggle("显示", isOn: $isOn)
+            .toggleStyle(.checkbox)
+            .labelsHidden()
+        #else
+        Button {
+            isOn.toggle()
+        } label: {
+            Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isOn ? Color.accentColor : .secondary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOn ? "在图表中隐藏" : "在图表中显示")
+        #endif
     }
 }
 

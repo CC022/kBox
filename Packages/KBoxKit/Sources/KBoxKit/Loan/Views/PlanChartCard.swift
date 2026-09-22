@@ -22,9 +22,12 @@ struct PlanChartCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    (Text("#\(plan.number)  ").foregroundStyle(.secondary) + Text(plan.displayName))
-                        .font(.headline)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text("#\(plan.number)").foregroundStyle(.secondary)
+                        Text(plan.displayName)
+                    }
+                    .font(.headline)
+                    .lineLimit(1)
                     Text("总利息 \(Fmt.compactMoney(summary.totals[.interest] ?? 0)) · 总支付 \(Fmt.compactMoney(summary.totalPaid))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -48,18 +51,20 @@ struct PlanChartCard: View {
                 .foregroundStyle(.secondary)
                 .help("删除这个方案")
                 .frame(width: 18)
-                .opacity(isHovering || DebugOverrides.showCardActions ? 1 : 0)
+                .opacity(!Platform.supportsHover || isHovering || DebugOverrides.showCardActions ? 1 : 0)
                 .animation(.easeInOut(duration: 0.15), value: isHovering)
             }
             chart.frame(height: 220)
         }
         .padding(14)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.cardBackground, in: RoundedRectangle(cornerRadius: 12))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(isSelected ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: isSelected ? 2 : 1)
+                .strokeBorder(isSelected ? Color.accentColor : Color.hairline, lineWidth: isSelected ? 2 : 1)
         }
+        #if os(macOS)
         .onHover { isHovering = $0 }
+        #endif
         .contextMenu {
             Button("载入到计算器", systemImage: "arrow.uturn.backward", action: onLoad)
             Button("在图表中隐藏", systemImage: "eye.slash", action: onHide)
@@ -118,6 +123,25 @@ struct PlanChartCard: View {
             }
         }
         .chartXSelection(value: $hoverYear)
+        #if os(iOS)
+        // A tap pins the crosshair and a drag moves it; without an explicit gesture the
+        // enclosing ScrollView wins and nothing gets selected.
+        .chartGesture { proxy in
+            SpatialTapGesture()
+                .onEnded { proxy.selectXValue(at: $0.location.x) }
+                .exclusively(before: DragGesture(minimumDistance: 6)
+                    .onChanged { proxy.selectXValue(at: $0.location.x) })
+        }
+        #endif
+    }
+
+    /// Material blur renders badly over chart marks on iOS, so use an opaque card there.
+    private var tooltipBackground: AnyShapeStyle {
+        #if os(macOS)
+        AnyShapeStyle(.regularMaterial)
+        #else
+        AnyShapeStyle(Color.cardBackground)
+        #endif
     }
 
     private func tooltip(at x: Double) -> some View {
@@ -151,7 +175,8 @@ struct PlanChartCard: View {
         .font(.caption)
         .padding(8)
         .frame(width: 186)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .background(tooltipBackground, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
+        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
     }
 }

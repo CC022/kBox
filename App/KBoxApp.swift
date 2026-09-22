@@ -1,13 +1,18 @@
-import AppKit
 import KBoxKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 @main
 struct KBoxApp: App {
+    #if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    #endif
     @State private var loanStore = LaunchOptions.current.makeLoanStore()
 
     var body: some Scene {
+        #if os(macOS)
         Window("kBox", id: "main") {
             RootView(loanStore: loanStore)
                 .frame(minWidth: 1000, minHeight: 640)
@@ -18,12 +23,18 @@ struct KBoxApp: App {
         .commands {
             SidebarCommands()
         }
+        #else
+        WindowGroup {
+            RootView(loanStore: loanStore)
+        }
+        #endif
     }
 }
 
+#if os(macOS)
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Needed when launched as a bare executable (`swift run`) rather than from kBox.app.
+        // Needed when launched as a bare executable rather than from kBox.app.
         NSApp.setActivationPolicy(.regular)
         if let appearance = LaunchOptions.current.appearance {
             NSApp.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
@@ -35,17 +46,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 }
+#endif
 
 /// Environment variables for checking the UI from the command line (debug builds only).
 /// Not launch arguments: AppKit treats stray arguments as documents to open and then skips the main window.
 ///   KBOX_DEMO=1                preset plans, nothing read or saved
-///   KBOX_APPEARANCE=dark|light force an appearance
+///   KBOX_APPEARANCE=dark|light force an appearance (macOS)
 ///   KBOX_FETCH=1               fetch live rates on launch
 ///   KBOX_CHART_MODE=monthly    start the demo in 月供构成 mode
 ///   KBOX_HOVER_YEAR=12         show the chart crosshair at year 12
 ///   KBOX_CARD_ACTIONS=1        show the per-card hover actions
 ///   KBOX_EXTRAS=1              turn on the extra-cost section in the demo
-///   KBOX_SNAPSHOT=<file.png>   save the window to a PNG a few seconds after launch, then quit
+///   KBOX_SNAPSHOT=<file.png>   save the window to a PNG a few seconds after launch, then quit (macOS)
 ///   KBOX_SNAPSHOT_SIZE=WxH     resize the window before the snapshot (e.g. 1400x1500)
 struct LaunchOptions {
     var demo = false
@@ -70,14 +82,17 @@ struct LaunchOptions {
     @MainActor
     func makeLoanStore() -> LoanStore {
         #if DEBUG
-        DebugOverrides.hoverYear = ProcessInfo.processInfo.environment["KBOX_HOVER_YEAR"].flatMap(Double.init)
-        DebugOverrides.showCardActions = ProcessInfo.processInfo.environment["KBOX_CARD_ACTIONS"] == "1"
+        let env = ProcessInfo.processInfo.environment
+        DebugOverrides.hoverYear = env["KBOX_HOVER_YEAR"].flatMap(Double.init)
+        DebugOverrides.showCardActions = env["KBOX_CARD_ACTIONS"] == "1"
+        return demo ? .demo(chartMode: chartMode, extras: env["KBOX_EXTRAS"] == "1") : .live()
+        #else
+        return .live()
         #endif
-        let extras = ProcessInfo.processInfo.environment["KBOX_EXTRAS"] == "1"
-        return demo ? .demo(chartMode: chartMode, extras: extras) : .live()
     }
 }
 
+#if os(macOS)
 @MainActor
 enum DebugHooks {
     static func run(loanStore: LoanStore) async {
@@ -105,3 +120,4 @@ enum DebugHooks {
         #endif
     }
 }
+#endif

@@ -27,7 +27,7 @@ struct PaymentSummaryView: View {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .center, spacing: 24) {
                     donut(segments, total: first.total, selected: selected)
-                        .frame(width: 180, height: 180)
+                        .frame(width: donutSize, height: donutSize)
 
                     VStack(alignment: .leading, spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -72,6 +72,14 @@ struct PaymentSummaryView: View {
             }
             .padding(8)
         }
+    }
+
+    private var donutSize: CGFloat {
+        #if os(macOS)
+        180
+        #else
+        150
+        #endif
     }
 
     private func donut(_ segments: [Segment], total: Double, selected: Segment?) -> some View {
