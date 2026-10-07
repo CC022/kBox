@@ -6,4 +6,6 @@ public enum DebugOverrides {
     public static var hoverYear: Double?
     /// Show the per-card actions that normally appear on hover.
     public static var showCardActions = false
+    /// Focus the mail search field, which also shows the search scopes.
+    public static var focusMailSearch = false
 }

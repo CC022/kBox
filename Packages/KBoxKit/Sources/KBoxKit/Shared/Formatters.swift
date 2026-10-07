@@ -50,4 +50,26 @@ enum Fmt {
         let parts = Calendar.current.dateComponents([.year, .month], from: date)
         return "\(parts.year ?? 0) 年 \(parts.month ?? 0) 月"
     }
+
+    private static let weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+
+    /// Message-list date, as Mail shows it: "21:21" today, "昨天", "星期一" within a week, else "2026/9/21".
+    static func mailListDate(_ date: Date?, now: Date = .now, calendar: Calendar = .current) -> String {
+        guard let date else { return "" }
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0
+        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: date)
+        switch days {
+        case 0: return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
+        case 1: return "昨天"
+        case 2..<7: return weekdays[((parts.weekday ?? 1) - 1) % 7]
+        default: return "\(parts.year ?? 0)/\(parts.month ?? 0)/\(parts.day ?? 0)"
+        }
+    }
+
+    /// "2026年9月21日 星期一 21:21"
+    static func mailFullDate(_ date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute, .weekday], from: date)
+        return "\(parts.year ?? 0)年\(parts.month ?? 0)月\(parts.day ?? 0)日 \(weekdays[((parts.weekday ?? 1) - 1) % 7]) "
+            + String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
+    }
 }

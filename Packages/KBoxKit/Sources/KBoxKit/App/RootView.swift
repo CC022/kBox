@@ -5,12 +5,16 @@ import SwiftUI
 /// (tools | form | charts), which collapses on its own in portrait and compact widths.
 public struct RootView: View {
     let loanStore: LoanStore
+    let mailStore: MailStore
 
     @AppStorage("selectedTool") private var selectedToolID = Tool.loan.id
     @State private var search = ""
+    /// Clicking a row does not move keyboard focus by itself; take it so ↑/↓ then switch tools.
+    @FocusState private var isSidebarFocused: Bool
 
-    public init(loanStore: LoanStore) {
+    public init(loanStore: LoanStore, mailStore: MailStore) {
         self.loanStore = loanStore
+        self.mailStore = mailStore
     }
 
     public var body: some View {
@@ -20,6 +24,7 @@ public struct RootView: View {
         } detail: {
             switch selectedTool {
             case .loan?: LoanCalculatorView(store: loanStore)
+            case .mail?: MailboxView(store: mailStore)
             case nil: noSelection
             }
         }
@@ -29,11 +34,13 @@ public struct RootView: View {
         } content: {
             switch selectedTool {
             case .loan?: LoanFormView(store: loanStore).navigationTitle("参数")
+            case .mail?: MessageListView(store: mailStore)
             case nil: noSelection
             }
         } detail: {
             switch selectedTool {
             case .loan?: LoanCanvasView(store: loanStore)
+            case .mail?: MessageDetailView(store: mailStore)
             case nil: noSelection
             }
         }
@@ -51,6 +58,8 @@ public struct RootView: View {
                 }
             }
         }
+        .focused($isSidebarFocused)
+        .onChange(of: selectedToolID) { isSidebarFocused = true }
         .searchable(text: $search, placement: searchPlacement, prompt: "搜索工具")
         .overlay {
             if sections.isEmpty {
